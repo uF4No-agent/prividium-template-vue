@@ -243,8 +243,12 @@ export function usePrividium() {
     contractAddress: `0x${string}`;
     nonce: number;
     calldata: `0x${string}`;
-  }) {
-    return prividium?.authorizeTransaction({
+  }): Promise<{ message: string; activeUntil: string }> {
+    if (!prividium) {
+      throw new Error('Prividium SDK is not initialized.');
+    }
+
+    return await prividium.authorizeTransaction({
       walletAddress: params.walletAddress,
       toAddress: params.contractAddress,
       nonce: params.nonce,
@@ -260,8 +264,12 @@ export function usePrividium() {
     return prividium?.getWalletToken();
   }
 
-  async function getWalletRpcUrl() {
-    return prividium?.getWalletRpcUrl();
+  async function getWalletRpcUrl(): Promise<string> {
+    if (!prividium) {
+      throw new Error('Prividium SDK is not initialized.');
+    }
+
+    return await prividium.getWalletRpcUrl();
   }
 
   return {

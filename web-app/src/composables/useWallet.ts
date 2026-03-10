@@ -42,7 +42,7 @@ const walletClient = computed(() => {
 });
 
 export function useWallet() {
-  const { prividium } = usePrividium();
+  const { getWalletRpcUrl } = usePrividium();
 
   // Connect wallet
   const connectWallet = async () => {
@@ -104,7 +104,7 @@ export function useWallet() {
       }
 
       // 2. Add/Update with the per-user RPC URL
-      const walletRpcUrl = await prividium.getWalletRpcUrl();
+      const walletRpcUrl = await getWalletRpcUrl();
 
       await ethereum.request({
         method: 'wallet_addEthereumChain',

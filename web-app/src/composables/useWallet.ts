@@ -4,6 +4,7 @@ import { createWalletClient, custom } from 'viem';
 import { computed, ref } from 'vue';
 import { config, prividiumChain } from '../wagmi';
 import { usePrividium } from './usePrividium';
+import { PRIVIDIUM_LOGOUT_EVENT } from '../utils/sso/session';
 
 // Shared state
 const account = ref(getAccount(config));
@@ -41,6 +42,17 @@ const walletClient = computed(() => {
   });
 });
 
+const resetWalletState = () => {
+  account.value = getAccount(config);
+  currentChainId.value = getChainId(config);
+  isConnecting.value = false;
+  error.value = null;
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener(PRIVIDIUM_LOGOUT_EVENT, resetWalletState);
+}
+
 export function useWallet() {
   const { getWalletRpcUrl } = usePrividium();
 
@@ -68,9 +80,7 @@ export function useWallet() {
   const disconnectWallet = async () => {
     try {
       await disconnect(config);
-      account.value = getAccount(config);
-      currentChainId.value = getChainId(config);
-      error.value = null;
+      resetWalletState();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to disconnect wallet';
       throw err;
@@ -212,7 +222,7 @@ export function useWallet() {
     disconnectWallet,
     switchToCorrectNetwork,
     ensureWalletReady,
-    cleanup: () => {},
+    cleanup: resetWalletState,
     customChain: prividiumChain
   };
 }

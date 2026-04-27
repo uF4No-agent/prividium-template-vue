@@ -2,14 +2,20 @@ import type { Address } from 'viem';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { loadExistingPasskey } from '../utils/sso/passkeys';
+import { PRIVIDIUM_LOGOUT_EVENT } from '../utils/sso/session';
 import { usePrividium } from './usePrividium';
 
 const ssoAccount = ref<Address | null>(null);
 
 export function useSsoAccount() {
-  const { userWallets } = usePrividium();
+  const { userWallets, isAuthenticated } = usePrividium();
 
   const refresh = () => {
+    if (!isAuthenticated.value) {
+      ssoAccount.value = null;
+      return;
+    }
+
     const { savedAccount } = loadExistingPasskey();
     if (!savedAccount) {
       ssoAccount.value = null;
@@ -29,15 +35,15 @@ export function useSsoAccount() {
   onMounted(() => {
     refresh();
     window.addEventListener('storage', refresh);
+    window.addEventListener(PRIVIDIUM_LOGOUT_EVENT, refresh);
   });
 
   onUnmounted(() => {
     window.removeEventListener('storage', refresh);
+    window.removeEventListener(PRIVIDIUM_LOGOUT_EVENT, refresh);
   });
 
-  watch(userWallets, () => {
-    refresh();
-  });
+  watch([userWallets, isAuthenticated], refresh);
 
   return {
     account: computed(() => ssoAccount.value),

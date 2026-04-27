@@ -1,6 +1,7 @@
 import { type PrividiumChain, type UserProfile, createPrividiumChain } from 'prividium';
 import { computed, ref } from 'vue';
 import { clearStoredSsoState } from '../utils/sso/passkeys';
+import { emitPrividiumLogoutEvent } from '../utils/sso/session';
 
 const stripApiSuffix = (url?: string) => {
   const base = url?.replace(/\/$/, '');
@@ -222,6 +223,7 @@ export function usePrividium() {
     isAuthenticated.value = false;
     userProfile.value = null;
     authError.value = null;
+    emitPrividiumLogoutEvent();
   }
 
   function getAuthHeaders() {

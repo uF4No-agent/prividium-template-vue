@@ -3,11 +3,13 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePrividium } from '../composables/usePrividium';
 import { useSsoAccount } from '../composables/useSsoAccount';
+import { useWallet } from '../composables/useWallet';
 import BaseIcon from './BaseIcon.vue';
 
 const router = useRouter();
 const { account: ssoAccount } = useSsoAccount();
 const { isAuthenticated, signOut } = usePrividium();
+const { disconnectWallet } = useWallet();
 
 const companyName = import.meta.env.VITE_COMPANY_NAME || 'Prividium™';
 const companyIcon = import.meta.env.VITE_COMPANY_ICON || 'CubeIcon';
@@ -28,6 +30,12 @@ const copyAddress = () => {
 };
 
 const logout = async () => {
+  try {
+    await disconnectWallet();
+  } catch (error) {
+    console.warn('Wallet disconnect during logout failed:', error);
+  }
+
   try {
     signOut();
     dropdownOpen.value = false;

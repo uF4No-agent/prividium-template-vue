@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const routerReplace = vi.hoisted(() => vi.fn());
 const signOut = vi.hoisted(() => vi.fn());
+const disconnectWallet = vi.hoisted(() => vi.fn(async () => undefined));
 const isAuthenticated = ref(true);
 const ssoAccount = ref<string | null>(null);
 
@@ -20,6 +21,11 @@ vi.mock('../../src/composables/usePrividium', () => ({
   })
 }));
 
+vi.mock('../../src/composables/useWallet', () => ({
+  useWallet: () => ({
+    disconnectWallet
+  })
+}));
 vi.mock('../../src/composables/useSsoAccount', () => ({
   useSsoAccount: () => ({
     account: ssoAccount
@@ -32,6 +38,7 @@ afterEach(() => {
   vi.clearAllMocks();
   isAuthenticated.value = true;
   ssoAccount.value = null;
+  disconnectWallet.mockReset();
 });
 
 describe('AppNavbar', () => {
@@ -84,6 +91,7 @@ describe('AppNavbar', () => {
     const logoutButton = wrapper.find('button[title="Sign Out"]');
     await logoutButton.trigger('click');
 
+    expect(disconnectWallet).toHaveBeenCalled();
     expect(signOut).toHaveBeenCalled();
     expect(routerReplace).toHaveBeenCalledWith('/login');
   });

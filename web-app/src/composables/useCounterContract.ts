@@ -47,7 +47,11 @@ export function useCounterContract(
     contractAddress: `0x${string}`;
     nonce: number;
     calldata: `0x${string}`;
-  }) => Promise<{ message: string; activeUntil: string }>
+  }) => Promise<{ message: string; activeUntil: string }>,
+  _browserWallet?: {
+    walletClient?: unknown;
+    address?: Address | null;
+  }
 ) {
   const contract = getContract({
     address: contractAddress,

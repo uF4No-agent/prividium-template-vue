@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe('createAdminSession', () => {
-  it('falls back to /api base url when first SIWE endpoint returns 404', async () => {
+  it('falls back to /api base url when first SIWE endpoint returns 404 and forwards nonceToken', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
@@ -23,10 +23,13 @@ describe('createAdminSession', () => {
         })
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ msg: 'Please sign this message' }), {
+        new Response(
+          JSON.stringify({ msg: 'Please sign this message', nonceToken: 'nonce-token-123' }),
+          {
           status: 200,
           headers: { 'Content-Type': 'application/json' }
-        })
+          }
+        )
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ token: 'token-123' }), {
@@ -46,5 +49,13 @@ describe('createAdminSession', () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe('http://localhost:8000/siwe-messages/');
     expect(fetchMock.mock.calls[1]?.[0]).toBe('http://localhost:8000/api/siwe-messages/');
     expect(fetchMock.mock.calls[2]?.[0]).toBe('http://localhost:8000/api/auth/login/crypto-native');
+    expect(fetchMock.mock.calls[2]?.[1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({
+        message: 'Please sign this message',
+        signature: '0xsigned',
+        nonceToken: 'nonce-token-123'
+      })
+    });
   });
 });

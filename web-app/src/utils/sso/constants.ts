@@ -1,8 +1,28 @@
 import { defineChain } from 'viem';
 
-// LocalStorage keys
-export const STORAGE_KEY_PASSKEY = 'zksync_sso_passkey';
-export const STORAGE_KEY_ACCOUNT = 'zksync_sso_account';
+type ContractsConfig = {
+  sso?: {
+    webauthnValidator?: `0x${string}`;
+    entryPoint?: `0x${string}`;
+  };
+};
+
+const parseContractsConfig = (): ContractsConfig => {
+  const rawConfig = import.meta.env.VITE_SSO_CONTRACTS_JSON;
+  if (!rawConfig) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawConfig) as ContractsConfig;
+  } catch (error) {
+    console.warn('Failed to parse VITE_SSO_CONTRACTS_JSON, falling back to VITE_SSO_* env vars.', error);
+    return {};
+  }
+};
+
+const contractsConfig = parseContractsConfig();
+const configSso = contractsConfig.sso ?? {};
 
 export const RP_ID = window.location.hostname;
 
@@ -45,8 +65,21 @@ export const ssoChain = defineChain({
 });
 
 export const ssoContracts = {
-  webauthnValidator: (import.meta.env.VITE_SSO_WEBAUTHN_VALIDATOR ||
+  webauthnValidator: (configSso.webauthnValidator ||
+    import.meta.env.VITE_SSO_WEBAUTHN_VALIDATOR ||
     '0xD52c9b1bA249f877C8492F64c096E37a8072982A') as `0x${string}`,
-  entryPoint: (import.meta.env.VITE_SSO_ENTRYPOINT ||
+  entryPoint: (configSso.entryPoint ||
+    import.meta.env.VITE_SSO_ENTRYPOINT ||
     '0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108') as `0x${string}`
 };
+
+const storageNamespace = [
+  'zksync_sso',
+  String(ssoChain.id),
+  ssoContracts.entryPoint.slice(2, 10).toLowerCase(),
+  ssoContracts.webauthnValidator.slice(2, 10).toLowerCase()
+].join('_');
+
+// LocalStorage keys
+export const STORAGE_KEY_PASSKEY = `${storageNamespace}_passkey`;
+export const STORAGE_KEY_ACCOUNT = `${storageNamespace}_account`;

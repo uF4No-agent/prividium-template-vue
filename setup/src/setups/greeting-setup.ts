@@ -61,8 +61,8 @@ export async function setupGreetingDapp(adminApiClient: Client) {
         contractAddress: contractAddress,
         description: 'Contract for greeter example dapp',
         discloseBytecode: false,
-        discloseErc20Balance: false,
-        erc20LockAddresses: []
+        discloseErc20TotalSupply: false,
+        disclosedAddresses: []
       }
     })
   );

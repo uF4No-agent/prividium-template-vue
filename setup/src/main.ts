@@ -15,11 +15,34 @@ import { syncEnvFromContractsConfig } from './tools/env-sync';
 import { assertPrividiumApiUp, assertZksyncOsIsUp } from './tools/service-assert';
 import { deploySsoContracts } from './tools/sso-deploy';
 
+function shouldSkipSso(): boolean {
+  return process.argv.includes('--skip-sso');
+}
+
 function printAppDeploymentSummary(appContracts: Record<string, `0x${string}`>) {
   console.log('\nApp deployment summary:');
   for (const [contractName, contractAddress] of Object.entries(appContracts)) {
     console.log(`  ${contractName}: ${contractAddress}`);
   }
+}
+
+function formatConfiguredAddressError(error: unknown, contractsConfigPath: string): Error | null {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  if (!/^No code at configured /.test(error.message) && !/^Factory beacon has no code at /.test(error.message)) {
+    return null;
+  }
+
+  return new Error(
+    [
+      error.message,
+      `The setup script reuses existing SSO addresses from ${contractsConfigPath} when that file is present.`,
+      'Those addresses appear to be stale for the current Prividium deployment, so the script cannot inspect contract code at them.',
+      'Update or remove the stale addresses in that file, or delete the file to let setup deploy fresh contracts.'
+    ].join('\n')
+  );
 }
 
 async function main() {
@@ -77,56 +100,70 @@ async function main() {
   );
   s.stop('Authenticated as admin!');
 
-  console.log('\nDeploying SSO contracts (implementation, beacon, factory)...');
+  const skipSso = shouldSkipSso();
   const backendEnvPath = path.join(backendPath, '.env');
   const executorPrivateKey =
     (extractConfigOptional(setupEnvPath, 'EXECUTOR_PRIVATE_KEY') as `0x${string}` | undefined) ??
     adminPrivateKey;
 
-  const ssoContracts = await deploySsoContracts({
-    rpcUrl: proxyUrl,
-    chainId: l2ChainId,
-    executorPrivateKey,
-    authToken: adminAuthToken,
-    configured: {
-      eoaValidator:
-        existingContractsConfig?.sso?.eoaValidator ??
-        (extractConfigOptional(setupEnvPath, 'SSO_EOA_VALIDATOR_CONTRACT') as
-          | `0x${string}`
-          | undefined),
-      webauthnValidator:
-        existingContractsConfig?.sso?.webauthnValidator ??
-        (extractConfigOptional(setupEnvPath, 'SSO_WEBAUTHN_VALIDATOR_CONTRACT') as
-          | `0x${string}`
-          | undefined),
-      sessionValidator:
-        existingContractsConfig?.sso?.sessionValidator ??
-        (extractConfigOptional(setupEnvPath, 'SSO_SESSION_VALIDATOR_CONTRACT') as
-          | `0x${string}`
-          | undefined),
-      guardianExecutor:
-        existingContractsConfig?.sso?.guardianExecutor ??
-        (extractConfigOptional(setupEnvPath, 'SSO_GUARDIAN_EXECUTOR_CONTRACT') as
-          | `0x${string}`
-          | undefined),
-      entryPoint:
-        existingContractsConfig?.sso?.entryPoint ??
-        (extractConfigOptional(setupEnvPath, 'PRIVIDIUM_ENTRYPOINT_ADDRESS') as
-          | `0x${string}`
-          | undefined),
-      accountImplementation:
-        existingContractsConfig?.sso?.accountImplementation ??
-        (extractConfigOptional(setupEnvPath, 'SSO_ACCOUNT_IMPLEMENTATION_CONTRACT') as
-          | `0x${string}`
-          | undefined),
-      beacon:
-        existingContractsConfig?.sso?.beacon ??
-        (extractConfigOptional(setupEnvPath, 'SSO_BEACON_CONTRACT') as `0x${string}` | undefined),
-      factory:
-        existingContractsConfig?.sso?.factory ??
-        (extractConfigOptional(setupEnvPath, 'SSO_FACTORY_CONTRACT') as `0x${string}` | undefined)
+  let ssoContracts: Awaited<ReturnType<typeof deploySsoContracts>> | undefined;
+  if (skipSso) {
+    console.log('\nSkipping SSO contract deployment and SSO permissions setup (--skip-sso).');
+  } else {
+    console.log('\nDeploying SSO contracts (implementation, beacon, factory)...');
+    try {
+      ssoContracts = await deploySsoContracts({
+        rpcUrl: proxyUrl,
+        chainId: l2ChainId,
+        executorPrivateKey,
+        authToken: adminAuthToken,
+        configured: {
+          eoaValidator:
+            existingContractsConfig?.sso?.eoaValidator ??
+            (extractConfigOptional(setupEnvPath, 'SSO_EOA_VALIDATOR_CONTRACT') as
+              | `0x${string}`
+              | undefined),
+          webauthnValidator:
+            existingContractsConfig?.sso?.webauthnValidator ??
+            (extractConfigOptional(setupEnvPath, 'SSO_WEBAUTHN_VALIDATOR_CONTRACT') as
+              | `0x${string}`
+              | undefined),
+          sessionValidator:
+            existingContractsConfig?.sso?.sessionValidator ??
+            (extractConfigOptional(setupEnvPath, 'SSO_SESSION_VALIDATOR_CONTRACT') as
+              | `0x${string}`
+              | undefined),
+          guardianExecutor:
+            existingContractsConfig?.sso?.guardianExecutor ??
+            (extractConfigOptional(setupEnvPath, 'SSO_GUARDIAN_EXECUTOR_CONTRACT') as
+              | `0x${string}`
+              | undefined),
+          entryPoint:
+            existingContractsConfig?.sso?.entryPoint ??
+            (extractConfigOptional(setupEnvPath, 'PRIVIDIUM_ENTRYPOINT_ADDRESS') as
+              | `0x${string}`
+              | undefined),
+          accountImplementation:
+            existingContractsConfig?.sso?.accountImplementation ??
+            (extractConfigOptional(setupEnvPath, 'SSO_ACCOUNT_IMPLEMENTATION_CONTRACT') as
+              | `0x${string}`
+              | undefined),
+          beacon:
+            existingContractsConfig?.sso?.beacon ??
+            (extractConfigOptional(setupEnvPath, 'SSO_BEACON_CONTRACT') as
+              | `0x${string}`
+              | undefined),
+          factory:
+            existingContractsConfig?.sso?.factory ??
+            (extractConfigOptional(setupEnvPath, 'SSO_FACTORY_CONTRACT') as
+              | `0x${string}`
+              | undefined)
+        }
+      });
+    } catch (error) {
+      throw formatConfiguredAddressError(error, contractsConfigPath) ?? error;
     }
-  });
+  }
 
   const interopConfig: ContractsConfig['interop'] = {
     l1InteropHandler:
@@ -138,17 +175,21 @@ async function main() {
   };
 
   const updatedContractsConfig = mergeContractsConfig(existingContractsConfig, {
-    sso: {
-      eoaValidator: ssoContracts.eoaValidator,
-      webauthnValidator: ssoContracts.webauthnValidator,
-      sessionValidator: ssoContracts.sessionValidator,
-      guardianExecutor: ssoContracts.guardianExecutor,
-      entryPoint: ssoContracts.entryPoint,
-      accountImplementation: ssoContracts.accountImplementation,
-      beacon: ssoContracts.beacon,
-      factory: ssoContracts.factory,
-      ssoBytecodeHash: ssoContracts.ssoBytecodeHash
-    },
+    ...(ssoContracts
+      ? {
+          sso: {
+            eoaValidator: ssoContracts.eoaValidator,
+            webauthnValidator: ssoContracts.webauthnValidator,
+            sessionValidator: ssoContracts.sessionValidator,
+            guardianExecutor: ssoContracts.guardianExecutor,
+            entryPoint: ssoContracts.entryPoint,
+            accountImplementation: ssoContracts.accountImplementation,
+            beacon: ssoContracts.beacon,
+            factory: ssoContracts.factory,
+            ssoBytecodeHash: ssoContracts.ssoBytecodeHash
+          }
+        }
+      : {}),
     interop: interopConfig
   });
 
@@ -163,17 +204,19 @@ async function main() {
     contractsConfigPath
   });
 
-  console.log('\nRegistering SSO contracts and configuring permissions...');
-  await setupSsoContracts(adminApiClient, {
-    eoaValidator: ssoContracts.eoaValidator,
-    webauthnValidator: ssoContracts.webauthnValidator,
-    sessionValidator: ssoContracts.sessionValidator,
-    guardianExecutor: ssoContracts.guardianExecutor,
-    entryPoint: ssoContracts.entryPoint,
-    accountImplementation: ssoContracts.accountImplementation,
-    beacon: ssoContracts.beacon,
-    factory: ssoContracts.factory
-  });
+  if (ssoContracts) {
+    console.log('\nRegistering SSO contracts and configuring permissions...');
+    await setupSsoContracts(adminApiClient, {
+      eoaValidator: ssoContracts.eoaValidator,
+      webauthnValidator: ssoContracts.webauthnValidator,
+      sessionValidator: ssoContracts.sessionValidator,
+      guardianExecutor: ssoContracts.guardianExecutor,
+      entryPoint: ssoContracts.entryPoint,
+      accountImplementation: ssoContracts.accountImplementation,
+      beacon: ssoContracts.beacon,
+      factory: ssoContracts.factory
+    });
+  }
 
   console.log('\nDeploying app contracts and configuring permissions...');
   const appContracts = await setupCounterDapp(adminApiClient, {
@@ -197,32 +240,34 @@ async function main() {
     contractsConfigPath
   });
 
-  console.log('\nSSO deployment summary:');
-  console.log(
-    `  WebAuthn validator: ${ssoContracts.webauthnValidator} (${ssoContracts.deployed.webauthnValidator ? 'deployed' : 'existing'})`
-  );
-  console.log(
-    `  EOA validator: ${ssoContracts.eoaValidator} (${ssoContracts.deployed.eoaValidator ? 'deployed' : 'existing'})`
-  );
-  console.log(
-    `  Session validator: ${ssoContracts.sessionValidator} (${ssoContracts.deployed.sessionValidator ? 'deployed' : 'existing'})`
-  );
-  console.log(
-    `  Guardian executor: ${ssoContracts.guardianExecutor} (${ssoContracts.deployed.guardianExecutor ? 'deployed' : 'existing'})`
-  );
-  console.log(
-    `  EntryPoint: ${ssoContracts.entryPoint} (${ssoContracts.deployed.entryPoint ? 'deployed' : 'existing'})`
-  );
-  console.log(
-    `  Account implementation: ${ssoContracts.accountImplementation} (${ssoContracts.deployed.accountImplementation ? 'deployed' : 'existing'})`
-  );
-  console.log(
-    `  Beacon: ${ssoContracts.beacon} (${ssoContracts.deployed.beacon ? 'deployed' : 'existing'})`
-  );
-  console.log(
-    `  Factory: ${ssoContracts.factory} (${ssoContracts.deployed.factory ? 'deployed' : 'existing'})`
-  );
-  console.log(`  Account bytecode hash: ${ssoContracts.ssoBytecodeHash}`);
+  if (ssoContracts) {
+    console.log('\nSSO deployment summary:');
+    console.log(
+      `  WebAuthn validator: ${ssoContracts.webauthnValidator} (${ssoContracts.deployed.webauthnValidator ? 'deployed' : 'existing'})`
+    );
+    console.log(
+      `  EOA validator: ${ssoContracts.eoaValidator} (${ssoContracts.deployed.eoaValidator ? 'deployed' : 'existing'})`
+    );
+    console.log(
+      `  Session validator: ${ssoContracts.sessionValidator} (${ssoContracts.deployed.sessionValidator ? 'deployed' : 'existing'})`
+    );
+    console.log(
+      `  Guardian executor: ${ssoContracts.guardianExecutor} (${ssoContracts.deployed.guardianExecutor ? 'deployed' : 'existing'})`
+    );
+    console.log(
+      `  EntryPoint: ${ssoContracts.entryPoint} (${ssoContracts.deployed.entryPoint ? 'deployed' : 'existing'})`
+    );
+    console.log(
+      `  Account implementation: ${ssoContracts.accountImplementation} (${ssoContracts.deployed.accountImplementation ? 'deployed' : 'existing'})`
+    );
+    console.log(
+      `  Beacon: ${ssoContracts.beacon} (${ssoContracts.deployed.beacon ? 'deployed' : 'existing'})`
+    );
+    console.log(
+      `  Factory: ${ssoContracts.factory} (${ssoContracts.deployed.factory ? 'deployed' : 'existing'})`
+    );
+    console.log(`  Account bytecode hash: ${ssoContracts.ssoBytecodeHash}`);
+  }
   printAppDeploymentSummary(appContracts);
 
   outro(

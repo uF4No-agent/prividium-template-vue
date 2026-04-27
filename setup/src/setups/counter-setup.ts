@@ -90,8 +90,8 @@ export async function setupCounterDapp(
         contractAddress: contractAddress,
         description: `${contractName} contract`,
         discloseBytecode: false,
-        discloseErc20Balance: false,
-        erc20LockAddresses: []
+        discloseErc20TotalSupply: false,
+        disclosedAddresses: []
       })
     );
 

@@ -82,9 +82,10 @@ References:
 
 Setup authenticates admin via:
 1. `POST /siwe-messages/`
-2. Sign message with admin private key.
-3. `POST /auth/login/crypto-native`
-4. Use Bearer token in subsequent API/RPC calls.
+2. Read both `msg` and `nonceToken` from the response.
+3. Sign `msg` with the admin private key.
+4. `POST /auth/login/crypto-native` with `message`, `signature`, and `nonceToken`.
+5. Use Bearer token in subsequent API/RPC calls.
 
 Reference:
 - `setup/src/tools/create-admin-client.ts`
@@ -103,7 +104,16 @@ Reference:
 
 ### 3.3 Contract Registration + Permissions
 
-Setup registers each contract in Prividium API (`/contracts/`) and configures function permissions (`/contract-permissions/`) from ABI:
+Setup registers each contract in Prividium API (`/contracts/`) and configures function permissions (`/contract-permissions/`) from ABI.
+
+Current contract-registration payloads must use:
+- `discloseErc20TotalSupply`
+- `discloseBytecode`
+- `disclosedAddresses`
+
+Older field names such as `discloseErc20Balance` and `erc20LockAddresses` are stale for the current API.
+
+Function permissions still follow:
 - `accessType`: `read` for `view/pure`, else `write`
 - `ruleType`: `public`
 - `roles`: `[]`
@@ -135,6 +145,10 @@ The sample app’s main write path remains passkey smart accounts.
 Auth:
 - `POST /siwe-messages/`
 - `POST /auth/login/crypto-native`
+
+Auth note:
+- `/siwe-messages/` returns `nonce`, `msg`, and `nonceToken`.
+- `/auth/login/crypto-native` now requires `nonceToken` alongside `message` and `signature`.
 
 App + contract setup:
 - `POST /applications/`

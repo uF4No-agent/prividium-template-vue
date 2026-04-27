@@ -46,6 +46,8 @@ afterEach(() => {
 
 describe('usePrividium', () => {
   it('maps fallback /profiles/me payload into app profile shape', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
     fetchUser.mockRejectedValue(new Error('sdk profile unavailable'));
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(

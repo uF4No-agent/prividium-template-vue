@@ -136,8 +136,8 @@ async function ensureContractRegistered(
       contractAddress,
       description: 'Deployed SSO smart account',
       discloseBytecode: false,
-      discloseErc20Balance: false,
-      erc20LockAddresses: []
+      discloseErc20TotalSupply: false,
+      disclosedAddresses: []
     })
   });
 

@@ -62,6 +62,8 @@ export class ApiClient {
 // Type definitions for API responses
 export interface SiweMessage {
   msg: string;
+  nonce?: string;
+  nonceToken?: string;
 }
 
 export interface AuthResponse {
@@ -116,7 +118,7 @@ export async function postSiweMessages(
 
 export async function postAuthLoginCryptoNative(
   client: ApiClient,
-  body: { message: string; signature: string }
+  body: { message: string; signature: string; nonceToken?: string }
 ): Promise<ApiResponse<AuthResponse>> {
   return client.post<AuthResponse>('/auth/login/crypto-native', body);
 }
@@ -136,8 +138,8 @@ export async function postContracts(
     abi: string;
     contractAddress: string;
     discloseBytecode: boolean;
-    discloseErc20Balance: boolean;
-    erc20LockAddresses: string[];
+    discloseErc20TotalSupply: boolean;
+    disclosedAddresses?: Array<{ address: string }>;
   }
 ): Promise<ApiResponse<Contract>> {
   return client.post<Contract>('/contracts/', body);

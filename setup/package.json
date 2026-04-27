@@ -6,6 +6,7 @@
   "scripts": {
     "setup": "tsx src/main.ts",
     "setup:permissions": "tsx src/main.ts",
+    "setup:no-sso": "tsx src/main.ts --skip-sso",
     "setup:system": "tsx src/system.ts",
     "setup:app": "tsx src/app.ts",
     "setup-app": "tsx src/setup-app.ts",

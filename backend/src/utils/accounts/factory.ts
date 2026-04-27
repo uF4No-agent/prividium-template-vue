@@ -2,7 +2,6 @@ import type { Address } from 'viem';
 
 import { client } from '../client';
 import { SSO_CONTRACTS } from '../constants';
-import { env } from '../envConfig';
 import { ensureBeaconDeployed } from './beacon';
 
 let runtimeFactoryAddress: Address | null = null;
@@ -27,7 +26,7 @@ export function getFactoryAddress(): Address {
 }
 
 export async function ensureFactoryDeployed(): Promise<Address> {
-  const configured = env.SSO_FACTORY_CONTRACT as Address | undefined;
+  const configured = SSO_CONTRACTS.factory as Address | undefined;
   if (configured) {
     console.log(`Checking configured factory address: ${configured}`);
     const configuredHasCode = await hasCode(configured);

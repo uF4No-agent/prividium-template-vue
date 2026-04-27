@@ -258,8 +258,8 @@ async function main() {
               contractAddress: counterAddress,
               description: 'Simple counter contract for demo app',
               discloseBytecode: false,
-              discloseErc20Balance: false,
-              erc20LockAddresses: []
+              discloseErc20TotalSupply: false,
+              disclosedAddresses: []
             })
           );
         }

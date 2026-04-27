@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { loadEnv, parseEnv } from '@/utils/envConfig';
 
@@ -12,6 +12,10 @@ function createBaseEnv() {
 }
 
 describe('envConfig', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('parses valid env values and applies defaults', () => {
     const parsed = parseEnv(createBaseEnv());
 
@@ -22,6 +26,8 @@ describe('envConfig', () => {
   });
 
   it('throws for invalid required values', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
     expect(() =>
       parseEnv({
         ...createBaseEnv(),

@@ -1,5 +1,4 @@
 import { defineChain } from 'viem';
-import contractsConfigJson from '../../../../config/contracts.json';
 
 type ContractsConfig = {
   sso?: {
@@ -8,7 +7,21 @@ type ContractsConfig = {
   };
 };
 
-const contractsConfig = contractsConfigJson as ContractsConfig;
+const parseContractsConfig = (): ContractsConfig => {
+  const rawConfig = import.meta.env.VITE_SSO_CONTRACTS_JSON;
+  if (!rawConfig) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawConfig) as ContractsConfig;
+  } catch (error) {
+    console.warn('Failed to parse VITE_SSO_CONTRACTS_JSON, falling back to VITE_SSO_* env vars.', error);
+    return {};
+  }
+};
+
+const contractsConfig = parseContractsConfig();
 const configSso = contractsConfig.sso ?? {};
 
 export const RP_ID = window.location.hostname;

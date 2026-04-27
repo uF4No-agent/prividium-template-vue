@@ -64,16 +64,18 @@ pnpm -C setup refresh:env
 
 This project requires a target ZKsync Prividium™ chain to connect to. You can either run a local Prividium instance following the instructions in the [local Prividium repo](https://github.com/matter-labs/local-prividium) (requires access to private Docker registry) or use a remote Prividium instance.
 
-> [!NOTE]
-> Make sure the Prividium chain is running with the Bundler service enabled. It requires configuring the permissions API with the following environment variables:
+Make sure the Prividium chain is running with the Bundler service enabled. It requires configuring the permissions API with the following environment variables:
 
 ```sh
 # Bundler (ERC-4337) Configuration
 # Set BUNDLER_ENABLED=true to enable bundler RPC methods
 BUNDLER_ENABLED=true
-BUNDLER_RPC_URL=http://localhost:4337
+BUNDLER_RPC_URL=http://localhost:4337 # or BUNDLER_RPC_URL=http://bundler:4337 in local-prividium
 
 ```
+
+> [!NOTE]
+> Bundler service is enabled by default in [local-prividium](https://github.com/matter-labs/local-prividium).
 
 ## Quick Start
 

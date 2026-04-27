@@ -107,9 +107,15 @@ async function getAuthToken(): Promise<string> {
       const challengeJson = await challengeRes.json();
       console.log(`SIWE challenge response: ${JSON.stringify(challengeJson)}`);
       const message = challengeJson?.message || challengeJson?.msg;
+      const nonceToken = challengeJson?.nonceToken;
       if (!message) {
         throw new Error(
           `SIWE challenge missing message field. Response: ${JSON.stringify(challengeJson)}`
+        );
+      }
+      if (!nonceToken) {
+        throw new Error(
+          `SIWE challenge missing nonceToken field. Response: ${JSON.stringify(challengeJson)}`
         );
       }
 
@@ -119,7 +125,7 @@ async function getAuthToken(): Promise<string> {
       // 3. Login
       const loginUrl = buildUrl(loginPath);
       console.log(`SIWE login URL: ${loginUrl}`);
-      const loginRes = await postJson(loginUrl, { message, signature });
+      const loginRes = await postJson(loginUrl, { message, signature, nonceToken });
 
       if (!loginRes.ok) {
         const errorText = await loginRes.text().catch(() => '');

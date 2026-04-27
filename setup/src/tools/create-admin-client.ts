@@ -46,7 +46,8 @@ export async function createAdminSession(
   const { token } = extractRes(
     await postAuthLoginCryptoNative(anonApiClient, {
       message: siweMsg.msg,
-      signature
+      signature,
+      nonceToken: siweMsg.nonceToken
     })
   );
 

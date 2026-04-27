@@ -60,9 +60,9 @@ export async function setupAuctionApp(adminApiClient: Client) {
         name: 'Blind Auction',
         description: 'Blind Auction example dapp contract',
         abi: JSON.stringify(abi, null, 2),
-        erc20LockAddresses: [],
+        disclosedAddresses: [],
         discloseBytecode: false,
-        discloseErc20Balance: false,
+        discloseErc20TotalSupply: false,
         contractAddress
       }
     })

@@ -10,6 +10,7 @@
     "setup-app": "pnpm --filter prividium-setup setup-app",
     "setup:permissions": "pnpm -C setup run setup:permissions",
     "setup": "pnpm -C setup run setup",
+    "setup:no-sso": "pnpm -C setup run setup:no-sso",
     "ci:contracts": "cd contracts && ([ -d lib/forge-std/src ] || forge install foundry-rs/forge-std@v1.9.6 --no-git) && forge build",
     "ci:local": "pnpm check && pnpm ci:contracts && pnpm --filter web-app build",
     "build": "pnpm -r build",

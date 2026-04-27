@@ -26,7 +26,8 @@ const prividiumSdkChain = {
 
 let prividiumInstance: PrividiumChain | null = null;
 
-type AppUserProfile = UserProfile & {
+type AppUserProfile = Omit<UserProfile, 'displayName'> & {
+  displayName: string | null;
   userId: string;
   walletAddresses: string[];
 };

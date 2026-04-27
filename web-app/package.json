@@ -26,7 +26,7 @@
     "@wagmi/connectors": "5.8.5",
     "@wagmi/core": "2.17.3",
     "@wagmi/vue": "0.1.22",
-    "prividium": "^0.3.1",
+    "prividium": "^0.16.0",
     "viem": "2.45.1",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1",

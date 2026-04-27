@@ -2,7 +2,6 @@ import type { Address } from 'viem';
 
 import { client } from '../client';
 import { SSO_CONTRACTS } from '../constants';
-import { env } from '../envConfig';
 
 let runtimeBeaconAddress: Address | null = null;
 let runtimeImplementationAddress: Address | null = null;
@@ -31,7 +30,7 @@ export function getAccountImplementationAddress(): Address {
 }
 
 async function ensureAccountImplementationAvailable(): Promise<Address> {
-  const configured = env.SSO_ACCOUNT_IMPLEMENTATION_CONTRACT as Address | undefined;
+  const configured = SSO_CONTRACTS.accountImplementation as Address | undefined;
   if (configured) {
     const has = await hasCode(configured);
     if (has) {
@@ -53,7 +52,7 @@ async function ensureAccountImplementationAvailable(): Promise<Address> {
 }
 
 export async function ensureBeaconDeployed(): Promise<Address> {
-  const configured = env.SSO_BEACON_CONTRACT as Address | undefined;
+  const configured = SSO_CONTRACTS.beacon as Address | undefined;
   if (configured) {
     if (!(await hasCode(configured))) {
       throw new Error(`No code at configured beacon address: ${configured}`);

@@ -25,15 +25,19 @@ If generic docs conflict, follow these references.
 ### A) Admin/setup auth
 
 1. `POST /siwe-messages/`
-2. Sign message with admin key
-3. `POST /auth/login/crypto-native`
-4. Reuse Bearer token for API + RPC
+2. Capture both `msg` and `nonceToken` from the response
+3. Sign message with admin key
+4. `POST /auth/login/crypto-native` with `message`, `signature`, and `nonceToken`
+5. Reuse Bearer token for API + RPC
 
 ### B) App contract setup
 
 1. Create app (`POST /applications/`)
 2. Deploy contracts via authenticated RPC transport
-3. Register contract (`POST /contracts/`)
+3. Register contract (`POST /contracts/`) with current schema fields:
+   - `discloseErc20TotalSupply`
+   - `discloseBytecode`
+   - `disclosedAddresses`
 4. For each ABI function, create permission (`POST /contract-permissions/`) with:
    - `accessType`: `read` for `view/pure`, else `write`
    - `ruleType`: `public`
@@ -62,6 +66,7 @@ If generic docs conflict, follow these references.
 2. `setup` scripts already automate contract registration + permissions.
 3. New passkey account creation is backend-driven via `/deploy-account`; backend links wallet to user.
 4. `enableWalletToken` is wired in the sample passkey flow but should be treated as policy-dependent, not universally mandatory.
+5. Older contract-registration field names like `discloseErc20Balance` and `erc20LockAddresses` are stale for the current API in this repo.
 
 ## Do / Don’t
 

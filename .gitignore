@@ -31,5 +31,10 @@ contracts/out/
 contracts/cache/
 contracts/lib/
 
+# Coverage reports
+backend/coverage/
+setup/coverage/
+web-app/coverage/
+
 # Config
 config/contracts.json

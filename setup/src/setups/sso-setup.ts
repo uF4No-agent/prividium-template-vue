@@ -119,8 +119,8 @@ async function registerContract(adminApiClient: Client, contract: ContractSpec) 
             contractAddress: contract.address,
             description: contract.description,
             discloseBytecode: false,
-            discloseErc20Balance: false,
-            erc20LockAddresses: []
+            discloseErc20TotalSupply: false,
+            disclosedAddresses: []
           })
         )
       : extractRes(existingRes);
